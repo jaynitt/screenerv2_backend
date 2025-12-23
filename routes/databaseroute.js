@@ -32,7 +32,6 @@ router.post("/conditionalstock", async (req, res) => {
       return res.status(400).json({ error: "No conditions provided" });
     }
 
-    // ✅ Whitelists
     const allowedFields = [
       "symbol",
       "regularmarketprice",
@@ -46,31 +45,37 @@ router.post("/conditionalstock", async (req, res) => {
     const allowedOperators = ["=", ">", "<"];
 
     const whereClauses = [];
+    const values = [];
 
-    for (const c of conditions) {
+    conditions.forEach((c, idx) => {
       if (
         !allowedFields.includes(c.field) ||
         !allowedOperators.includes(c.operator)
       ) {
-        return res.status(400).json({ error: "Invalid condition" });
+        throw new Error("Invalid condition");
       }
 
+      // Build safe SQL fragment
       whereClauses.push(
-        sql`${sql.identifier([c.field])} ${sql.raw(c.operator)} ${Number(c.value)}`
+        `${c.field} ${c.operator} $${idx + 1}`
       );
-    }
 
-    const data = await sql`
+      values.push(Number(c.value));
+    });
+
+    const query = `
       SELECT * FROM stockdata
-      WHERE ${sql.join(whereClauses, sql` AND `)}
+      WHERE ${whereClauses.join(" AND ")}
     `;
 
+    const data = await sql(query, values);
     res.json(data);
   } catch (err) {
     console.error("Conditional query error:", err);
     res.status(500).json({ error: "Can't fetch data" });
   }
 });
+
 
 
 /* ---------------- GET SINGLE STOCK ---------------- */
