@@ -26,16 +26,39 @@ router.post("/insertstock", async (req, res) => {
 /* ---------------- CONDITIONAL QUERY ---------------- */
 router.post("/conditionalstock", async (req, res) => {
   try {
-    const conditions = req.body; // array of { field, operator, value }
+    const conditions = req.body;
 
-    if (!conditions || !Array.isArray(conditions) || conditions.length === 0) {
+    if (!Array.isArray(conditions) || conditions.length === 0) {
       return res.status(400).json({ error: "No conditions provided" });
     }
 
-    // Build the dynamic WHERE clause safely
-    const whereClauses = conditions.map(c =>
-      sql`${sql.identifier([c.field])} ${sql.raw(c.operator)} ${c.value}`
-    );
+    // ✅ Whitelists
+    const allowedFields = [
+      "symbol",
+      "regularmarketprice",
+      "marketcap",
+      "trailingpe",
+      "bookvalue",
+      "dividendrate",
+      "returnonequity"
+    ];
+
+    const allowedOperators = ["=", ">", "<"];
+
+    const whereClauses = [];
+
+    for (const c of conditions) {
+      if (
+        !allowedFields.includes(c.field) ||
+        !allowedOperators.includes(c.operator)
+      ) {
+        return res.status(400).json({ error: "Invalid condition" });
+      }
+
+      whereClauses.push(
+        sql`${sql.identifier([c.field])} ${sql.raw(c.operator)} ${Number(c.value)}`
+      );
+    }
 
     const data = await sql`
       SELECT * FROM stockdata
@@ -44,10 +67,11 @@ router.post("/conditionalstock", async (req, res) => {
 
     res.json(data);
   } catch (err) {
-    console.error(err);
+    console.error("Conditional query error:", err);
     res.status(500).json({ error: "Can't fetch data" });
   }
 });
+
 
 /* ---------------- GET SINGLE STOCK ---------------- */
 router.post("/getstock", async (req, res) => {
