@@ -84,6 +84,7 @@ app.get('/' , (req , res)=>{
 
 
 ///server instance
-app.listen(port,()=>{
-    console.log(`server running on ${port}`)
-})
+// app.listen(port,()=>{
+//     console.log(`server running on ${port}`)
+// })
+module.exports =app;
