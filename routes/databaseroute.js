@@ -27,7 +27,7 @@ router.post("/insertstock", async (req, res) => {
 router.post("/conditionalstock", async (req, res) => {
   try {
     const conditions = req.body;
-
+  console.log(conditions);
     if (!Array.isArray(conditions) || conditions.length === 0) {
       return res.status(400).json({ error: "No conditions provided" });
     }
@@ -68,7 +68,7 @@ router.post("/conditionalstock", async (req, res) => {
       WHERE ${whereClauses.join(" AND ")}
     `;
 
-    const data = await sql(query, values);
+const data = await sql.query(query, values);
     res.json(data);
   } catch (err) {
     console.error("Conditional query error:", err);
